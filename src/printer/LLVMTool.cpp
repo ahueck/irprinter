@@ -5,9 +5,8 @@
  *      Author: ahueck
  */
 
-#include <printer/LLVMTool.h>
+#include "printer/LLVMTool.h"
 
-#include <clang/Tooling/ArgumentsAdjusters.h>
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/CompilationDatabase.h>
 
@@ -87,24 +86,45 @@ LLVMTool::LLVMTool(CommonOptionsParser& op) : tool(op.getCompilations(), op.getS
 }
 
 void LLVMTool::execute() {
+  commitUserArgs();
   auto action = action::CreateExtractorActionFactory(ctx, m);
   tool.run(action.get());
 }
+
 std::unique_ptr<llvm::Module> LLVMTool::takeModule() {
   return std::move(m);
 }
 
-llvm::Module* LLVMTool::getModule() {
+const llvm::Module* LLVMTool::getModule() const {
   return m.get();
 }
 
-void LLVMTool::setOptFlag(const std::string& opt_flag) {
+void LLVMTool::setFlag(StringRef flag) {
+  user_args.emplace_back(flag.data());
+}
+
+void LLVMTool::removeFlag(StringRef flag) {
+  this->user_args.erase(llvm::remove_if(user_args, [&flag](const auto& str) { return flag == str; }), user_args.end());
+}
+
+void LLVMTool::clearUserFlags() {
+  user_args.clear();
   tool.clearArgumentsAdjusters();
   tool.appendArgumentsAdjuster(getClangStripOutputAdjuster());
   tool.appendArgumentsAdjuster(getClangSyntaxOnlyAdjuster());
   tool.appendArgumentsAdjuster(getClangStripDependencyFileAdjuster());
-  tool.appendArgumentsAdjuster(combineAdjusters(
-      adjuster::getStripOptFlagAdjuster(), getInsertArgumentAdjuster(opt_flag.c_str(), ArgumentInsertPosition::END)));
+}
+
+void LLVMTool::commitUserArgs() {
+  for (auto& arg : user_args) {
+    StringRef flag = arg;
+    if (flag.startswith("-O") || flag.startswith("-g")) {
+      tool.appendArgumentsAdjuster(combineAdjusters(
+          adjuster::getStripOptFlagAdjuster(), getInsertArgumentAdjuster(flag.data(), ArgumentInsertPosition::END)));
+    } else {
+      tool.appendArgumentsAdjuster(getInsertArgumentAdjuster(flag.data()));
+    }
+  }
 }
 
 LLVMTool::~LLVMTool() = default;

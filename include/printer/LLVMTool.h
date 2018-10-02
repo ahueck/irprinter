@@ -8,8 +8,10 @@
 #ifndef SRC_PRINTER_LLVMTOOL_H_
 #define SRC_PRINTER_LLVMTOOL_H_
 
+#include <clang/Tooling/ArgumentsAdjusters.h>
 #include <clang/Tooling/Tooling.h>
 
+#include <llvm/ADT/SmallVector.h>
 #include <llvm/IR/LLVMContext.h>
 
 #include <memory>
@@ -30,19 +32,25 @@ class LLVMTool {
   clang::tooling::ClangTool tool;
   llvm::LLVMContext ctx;
   std::unique_ptr<llvm::Module> m;
+  clang::tooling::CommandLineArguments user_args;
 
  public:
   LLVMTool(clang::tooling::CommonOptionsParser&);
 
   void execute();
 
-  void setOptFlag(const std::string& opt_flag);
+  void setFlag(StringRef flag);
+  void removeFlag(StringRef flag);
+  void clearUserFlags();
 
   std::unique_ptr<llvm::Module> takeModule();
 
-  llvm::Module* getModule();
+  const llvm::Module* getModule() const;
 
   virtual ~LLVMTool();
+
+ private:
+  void commitUserArgs();
 };
 
 }  // namespace irprinter
