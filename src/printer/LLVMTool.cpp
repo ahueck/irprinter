@@ -104,7 +104,7 @@ void LLVMTool::setFlag(StringRef flag) {
 }
 
 void LLVMTool::removeFlag(StringRef flag) {
-  this->user_args.erase(llvm::remove_if(user_args, [&flag](const auto& str) { return flag == str; }), user_args.end());
+  user_args.erase(llvm::remove_if(user_args, [&flag](const auto& str) { return flag == str; }), user_args.end());
 }
 
 void LLVMTool::clearUserFlags() {

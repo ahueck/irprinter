@@ -23,7 +23,7 @@ void applyToMatchingFunction(llvm::raw_ostream& os, const llvm::Module* m, const
   unsigned count{0};
   for (auto f : fvec) {
     auto fname = f->getName();
-    os << "Match " << ++count << " [" << util::try_demangle(fname) << "]:\n";
+    os << "Match " << ++count << " [" << util::try_demangle(fname) << "]:";
     func(f);
     os << "\n";
   }
@@ -43,13 +43,16 @@ void IRNodeFinder::dump() const {
   tool.getModule()->print(os, nullptr);
 }
 
+void IRNodeFinder::setOptFlag(StringRef flag) {
+  tool.setFlag(flag);
+}
+
 void IRNodeFinder::printFunction(const std::string regex) const {
   const auto* m = tool.getModule();
   applyToMatchingFunction(os, m, regex, [&](const Function* f) { f->print(os); });
 }
 
 void IRNodeFinder::listFunction(const std::string regex) const {
-  //	listFunctionDecls(visitor.ctx, regex, visitor.os);
   const auto* m = tool.getModule();
   applyToMatchingFunction(os, m, regex, [&](const Function* f) {
     std::string s;
@@ -57,11 +60,15 @@ void IRNodeFinder::listFunction(const std::string regex) const {
     f->print(oss);
     oss.flush();
 
-    llvm::Regex r("((;|define)[^{]+){");
-    SmallVector<StringRef, 2> match;
-    r.match(s, &match);
-    if (match.size() > 1) {
-      os << *std::next(match.begin()) << "\n";
+    if (f->isDeclaration()) {
+      os << "\n" << s.substr(1);
+    } else {
+      llvm::Regex r("((;|define)[^{]+){");
+      SmallVector<StringRef, 2> match;
+      r.match(s, &match);
+      if (match.size() > 1) {
+        os << "\n" << *std::next(match.begin()) << "\n";
+      }
     }
   });
 }

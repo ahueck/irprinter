@@ -53,6 +53,15 @@ int main(int argc, const char** argv) {
 
     if (cmd == "q" || cmd == "quit") {
       break;
+    } else if (cmd == "g" || cmd == "generate") {
+      ir.parse();
+    } else if (cmd == "f" || cmd == "flag") {
+      auto str = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
+      llvm::outs() << "Set flag to " << str << ". Re-generating module...\n";
+      ir.setOptFlag(str);
+      ir.parse();
+    } else if (cmd == "d" || cmd == "dump") {
+      ir.dump();
     } else if (cmd == "l" || cmd == "list" || cmd == "p" || cmd == "print") {
       auto str = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
       if (str == "") {

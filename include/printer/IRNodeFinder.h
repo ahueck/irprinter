@@ -34,6 +34,8 @@ class IRNodeFinder {
 
   void dump() const;
 
+  void setOptFlag(StringRef flag);
+
   void printFunction(const std::string regex = ".*") const;
 
   void listFunction(const std::string regex = ".*") const;
