@@ -73,4 +73,8 @@ void IRNodeFinder::listFunction(const std::string regex) const {
   });
 }
 
+std::string IRNodeFinder::demangle(const std::string name) {
+  return util::try_demangle(name);
+}
+
 } /* namespace irprinter */

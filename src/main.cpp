@@ -60,7 +60,7 @@ int main(int argc, const char** argv) {
       llvm::outs() << "Set flag to " << str << ". Re-generating module...\n";
       ir.setOptFlag(str);
       ir.parse();
-    } else if (cmd == "d" || cmd == "dump") {
+    } else if (cmd == "dump") {
       ir.dump();
     } else if (cmd == "l" || cmd == "list" || cmd == "p" || cmd == "print") {
       auto str = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
@@ -79,6 +79,10 @@ int main(int argc, const char** argv) {
       } else {
         ir.listFunction(str);
       }
+    } else if (cmd == "d" || cmd == "demangle") {
+      auto str = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
+      auto demangled_name = irprinter::IRNodeFinder::demangle(str);
+      llvm::outs() << "Demangled name: " << demangled_name << "\n";
     }
 
     llvm::outs().flush();

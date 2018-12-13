@@ -39,6 +39,8 @@ class IRNodeFinder {
   void printFunction(const std::string regex = ".*") const;
 
   void listFunction(const std::string regex = ".*") const;
+
+  static std::string demangle(const std::string name);
 };
 
 } /* namespace irprinter */
