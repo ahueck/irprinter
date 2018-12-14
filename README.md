@@ -80,7 +80,7 @@ define i32 @main() local_unnamed_addr #1 {
 In the root project folder, execute the following commands
 
   ```
-  mkdir build
+  mkdir build && cd build
   cmake .. -DCMAKE_INSTALL_PREFIX=*your path*
   cmake --build . --target install
   ```
