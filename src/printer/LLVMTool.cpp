@@ -85,10 +85,10 @@ std::unique_ptr<tooling::FrontendActionFactory> CreateExtractorActionFactory(LLV
 LLVMTool::LLVMTool(CommonOptionsParser& op) : tool(op.getCompilations(), op.getSourcePathList()) {
 }
 
-void LLVMTool::execute() {
+int LLVMTool::execute() {
   commitUserArgs();
   auto action = action::CreateExtractorActionFactory(ctx, m);
-  tool.run(action.get());
+  return tool.run(action.get());
 }
 
 std::unique_ptr<llvm::Module> LLVMTool::takeModule() {

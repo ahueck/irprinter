@@ -30,7 +30,7 @@ class IRNodeFinder {
  public:
   explicit IRNodeFinder(clang::tooling::CommonOptionsParser& op, llvm::raw_ostream& os = llvm::outs());
 
-  void parse();
+  int parse();
 
   void dump() const;
 

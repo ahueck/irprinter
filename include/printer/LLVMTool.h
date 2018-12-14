@@ -37,7 +37,7 @@ class LLVMTool {
  public:
   LLVMTool(clang::tooling::CommonOptionsParser&);
 
-  void execute();
+  int execute();
 
   void setFlag(StringRef flag);
   void removeFlag(StringRef flag);

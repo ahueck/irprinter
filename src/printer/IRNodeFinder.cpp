@@ -35,8 +35,8 @@ void applyToMatchingFunction(llvm::raw_ostream& os, const llvm::Module* m, const
 IRNodeFinder::IRNodeFinder(clang::tooling::CommonOptionsParser& op, llvm::raw_ostream& os) : tool(op), os(os) {
 }
 
-void IRNodeFinder::parse() {
-  tool.execute();
+int IRNodeFinder::parse() {
+  return tool.execute();
 }
 
 void IRNodeFinder::dump() const {

@@ -44,7 +44,12 @@ int main(int argc, const char** argv) {
   CommonOptionsParser op(argc, argv, IRPrinter);
 
   irprinter::IRNodeFinder ir(op);
-  ir.parse();
+
+  auto ret = ir.parse();
+  if (ret != 0) {
+    llvm::outs() << "Error parsing. Quitting...\n";
+    return ret;
+  }
 
   llvm::LineEditor le("ir-printer");
   while (llvm::Optional<std::string> line = le.readLine()) {
