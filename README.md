@@ -1,21 +1,21 @@
 # irprinter
 
 *irprinter* is a small commandline-based tool developed to explore LLVM IR code.
-Can print IR code of only specific functions, when dumping of the whole translation unit would produce too much output.
+The tool can print IR code of only specific functions, when dumping of the whole translation unit would produce too much output.
 
 
-### Main features
+## Main features
 Print LLVM IR code of a translation unit (C/C++) to a console.
   - Ability to modify and add compiler flags (e.g., replace `-g` with `-O2`) and re-generate the (modified) IR
   - Regex matching of (demangled) function names, with the ability to print
-      1) function signatures only, and,
-      2) functions including body
+      1) Function signatures only, and,
+      2) Functions including body
   - Dump whole IR code of the TU
 
-### Usage
+## Usage
 See [main.cpp](src/main.cpp) for all possible commandline arguments.
 
-##### Example
+### Example of using *irprinter*
 Assume *test.c* contains the code:
 
   ```c
@@ -28,12 +28,14 @@ Assume *test.c* contains the code:
       return 0;
   }
   ```
-In the example we
-  1) load `test.c` with standard Clang flags
+#### Using irprinter on test.c
+In this example we
+  1) load `test.c` with standard Clang flags,
   2) list all functions in `test.c`,
-  3) Print the body of main,
-  4) Optimize the code with `-O3`, and finally,
+  3) print the body of main,
+  4) optimize the code with `-O3`, and finally,
   5) print the body of main again.
+
 ```console
 ahueck@sys:~/irprint/install$ ./bin/irprinter ../test.c --
 ir-printer> l
@@ -68,10 +70,10 @@ define i32 @main() local_unnamed_addr #1 {
 
 ```
 
-### How to build
+## How to build
 ###### Requirements
 - cmake >= 3.5
-- LLVM 6.0 (cmake needs to find the installation, see the [LLVM cmake documentation](https://llvm.org/docs/CMake.html#id14)
+- LLVM 6.0 (cmake needs to find the installation, see the [LLVM cmake documentation](https://llvm.org/docs/CMake.html#id14))
 - C++ compiler with support for the C++14 standard
 
 ###### Build steps
@@ -79,6 +81,6 @@ In the root project folder, execute the following commands
 
   ```
   mkdir build
-  cmake .. -DCMAKE_INSTALL_PREFIX=...
+  cmake .. -DCMAKE_INSTALL_PREFIX=*your path*
   cmake --build . --target install
   ```
