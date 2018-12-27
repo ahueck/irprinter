@@ -1,32 +1,32 @@
-add_library(irprint
+add_library(llvm-ir-print
   IRNodeFinder.cpp
   LLVMTool.cpp
 )
 
-target_define_file_basename(irprint)
-target_project_compile_options(irprint)
-target_project_compile_definitions(irprint
+target_define_file_basename(llvm-ir-print)
+target_project_compile_options(llvm-ir-print)
+target_project_compile_definitions(llvm-ir-print
   PRIVATE_DEFS
     LOG_LEVEL=${LOG_LEVEL}
 )
 
-target_include_directories(irprint
+target_include_directories(llvm-ir-print
   PUBLIC
   ${PROJECT_SOURCE_DIR}/include
 )
 
-target_include_directories(irprint 
+target_include_directories(llvm-ir-print 
   SYSTEM
   PUBLIC
   ${LLVM_INCLUDE_DIRS}
 )
 
-target_link_libraries(irprint
+target_link_libraries(llvm-ir-print
   ${CLANG_EXPORTED_TARGETS}
 )
 
 install(
-  TARGETS irprint
+  TARGETS llvm-ir-print
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   PUBLIC_HEADER DESTINATION include
