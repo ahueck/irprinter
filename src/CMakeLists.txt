@@ -12,13 +12,13 @@ target_project_compile_definitions(llvm-ir-printer${EXE_SUFFIX}
 )
 
 target_include_directories(llvm-ir-printer${EXE_SUFFIX}
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
-)
+  PRIVATE
+  ${PROJECT_SOURCE_DIR}/include
+  )
 
 target_link_libraries(llvm-ir-printer${EXE_SUFFIX}
+  LLVMLineEditor
   llvm-ir-print
-  #${libedit_LIBRARIES}
 )
 
 install(

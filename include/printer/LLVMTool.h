@@ -12,6 +12,7 @@
 #include <clang/Tooling/Tooling.h>
 
 #include <llvm/ADT/SmallVector.h>
+#include <llvm/ADT/StringRef.h>
 #include <llvm/IR/LLVMContext.h>
 
 #include <memory>
@@ -20,11 +21,9 @@ namespace llvm {
 class Module;
 }  // namespace llvm
 
-namespace clang {
-namespace tooling {
+namespace clang::tooling {
 class CommonOptionsParser;
-}  // namespace tooling
-}  // namespace clang
+}  // namespace clang::tooling
 
 namespace irprinter {
 
@@ -35,17 +34,17 @@ class LLVMTool {
   clang::tooling::CommandLineArguments user_args;
 
  public:
-  LLVMTool(clang::tooling::CommonOptionsParser&);
+  explicit LLVMTool(clang::tooling::CommonOptionsParser&);
 
   int execute();
 
-  void setFlag(StringRef flag);
-  void removeFlag(StringRef flag);
+  void setFlag(llvm::StringRef flag);
+  void removeFlag(llvm::StringRef flag);
   void clearUserFlags();
 
   std::unique_ptr<llvm::Module> takeModule();
 
-  const llvm::Module* getModule() const;
+  [[nodiscard]] const llvm::Module* getModule() const;
 
   virtual ~LLVMTool();
 

@@ -11,8 +11,7 @@
 
 #include "llvm/IR/Module.h"
 
-namespace irprinter {
-namespace util {
+namespace irprinter::util {
 
 namespace detail {
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4502.pdf :
@@ -76,7 +75,7 @@ inline std::string dump(const Val& s) {
 template <typename String>
 inline std::string try_demangle(String s) {
   std::string name = s;
-  auto demangle = llvm::itaniumDemangle(s.data(), nullptr, nullptr, nullptr);
+  auto demangle    = llvm::itaniumDemangle(s.data(), nullptr, nullptr, nullptr);
   if (demangle && std::string(demangle) != "") {
     return std::string(demangle);
   }
@@ -114,5 +113,4 @@ inline llvm::SmallVector<const llvm::Function*, 4> regex_find(const llvm::Module
   }
 }
 
-}  // namespace util
-}  // namespace irprinter
+}  // namespace irprinter::util

@@ -10,15 +10,14 @@
 
 #include <printer/LLVMTool.h>
 
+#include <llvm/ADT/StringRef.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include <string>
 
-namespace clang {
-namespace tooling {
+namespace clang::tooling {
 class CommonOptionsParser;
-}  // namespace tooling
-}  // namespace clang
+}  // namespace clang::tooling
 
 namespace irprinter {
 
@@ -34,13 +33,13 @@ class IRNodeFinder {
 
   void dump() const;
 
-  void setOptFlag(StringRef flag);
+  void setOptFlag(llvm::StringRef flag);
 
-  void printFunction(const std::string regex = ".*") const;
+  void printFunction(const std::string& regex = ".*") const;
 
-  void listFunction(const std::string regex = ".*") const;
+  void listFunction(const std::string& regex = ".*") const;
 
-  static std::string demangle(const std::string name);
+  static std::string demangle(const std::string& name);
 };
 
 } /* namespace irprinter */

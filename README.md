@@ -72,15 +72,15 @@ define i32 @main() local_unnamed_addr #1 {
 
 ## How to build
 ###### Requirements
-- cmake >= 3.5
-- LLVM 6.0 (cmake needs to find the installation, see the [LLVM cmake documentation](https://llvm.org/docs/CMake.html#id14))
-- C++ compiler with support for the C++14 standard
+- cmake >= 3.14
+- Clang/LLVM 10.0 (cmake needs to find the installation, see
+  the [LLVM cmake documentation](https://llvm.org/docs/CMake.html#id14))
+- C++ compiler with support for the C++17 standard, e.g., Clang 10
 
 ###### Build steps
 In the root project folder, execute the following commands
 
   ```
-  mkdir build && cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=*your path*
-  cmake --build . --target install
+  cmake -B build -DCMAKE_INSTALL_PREFIX=*your path*
+  cmake --build build --target install --parallel
   ```

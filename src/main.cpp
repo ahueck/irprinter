@@ -1,7 +1,6 @@
 #include <printer/IRNodeFinder.h>
 
 #include <clang/Tooling/CommonOptionsParser.h>
-#include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/Optional.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/Module.h>
@@ -14,7 +13,8 @@ using namespace clang;
 using namespace clang::tooling;
 
 static llvm::cl::OptionCategory IRPrinter("IR Printer Sample");
-// static cl::opt<bool> colors("color", cl::init(true), cl::desc("Enable or disable color output"), cl::cat(IRPrinter));
+// static cl::opt<bool> colors("use-color", cl::init(true), cl::desc("Enable or disable color output"),
+// cl::cat(IRPrinter));
 
 namespace {
 StringRef lexWord(StringRef word) {
@@ -54,7 +54,7 @@ int main(int argc, const char** argv) {
   llvm::LineEditor le("ir-printer");
   while (llvm::Optional<std::string> line = le.readLine()) {
     StringRef ref = *line;
-    auto cmd = lexWord(ref);
+    auto cmd      = lexWord(ref);
 
     if (cmd == "q" || cmd == "quit") {
       break;
@@ -85,7 +85,7 @@ int main(int argc, const char** argv) {
         ir.listFunction(str);
       }
     } else if (cmd == "d" || cmd == "demangle") {
-      auto str = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
+      auto str            = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
       auto demangled_name = irprinter::IRNodeFinder::demangle(str);
       llvm::outs() << "Demangled name: " << demangled_name << "\n";
     }
