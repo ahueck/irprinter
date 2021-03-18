@@ -70,8 +70,8 @@ class ExtractorActionFactory : public tooling::FrontendActionFactory {
   ExtractorActionFactory(LLVMContext& ctx, std::unique_ptr<llvm::Module>& Mods) : ctx(ctx), Mods(Mods) {
   }
 
-  FrontendAction* create() override {
-    return new ExtractorAction(ctx, Mods);
+  std::unique_ptr<FrontendAction> create() override {
+    return std::make_unique<ExtractorAction>(ctx, Mods);
   }
 };
 

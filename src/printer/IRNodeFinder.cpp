@@ -47,12 +47,12 @@ void IRNodeFinder::setOptFlag(StringRef flag) {
   tool.setFlag(flag);
 }
 
-void IRNodeFinder::printFunction(const std::string regex) const {
+void IRNodeFinder::printFunction(const std::string& regex) const {
   const auto* m = tool.getModule();
   applyToMatchingFunction(os, m, regex, [&](const Function* f) { f->print(os); });
 }
 
-void IRNodeFinder::listFunction(const std::string regex) const {
+void IRNodeFinder::listFunction(const std::string& regex) const {
   const auto* m = tool.getModule();
   applyToMatchingFunction(os, m, regex, [&](const Function* f) {
     std::string s;
@@ -73,7 +73,7 @@ void IRNodeFinder::listFunction(const std::string regex) const {
   });
 }
 
-std::string IRNodeFinder::demangle(const std::string name) {
+std::string IRNodeFinder::demangle(const std::string& name) {
   return util::try_demangle(name);
 }
 
