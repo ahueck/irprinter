@@ -1,7 +1,7 @@
 #include <printer/IRNodeFinder.h>
 
 #include <clang/Tooling/CommonOptionsParser.h>
-#include <llvm/ADT/Optional.h>
+#include <llvm/Support/Regex.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/Module.h>
 #include <llvm/LineEditor/LineEditor.h>
@@ -41,9 +41,18 @@ StringRef lexWord(StringRef word) {
 }  // namespace
 
 int main(int argc, const char** argv) {
+#if LLVM_VERSION_MAJOR < 14
   CommonOptionsParser op(argc, argv, IRPrinter);
-
   irprinter::IRNodeFinder ir(op);
+#else
+  auto op = CommonOptionsParser::create(argc, argv, IRPrinter);
+  if (!op) {
+    llvm::outs() << "Erroneous input";
+    return 1;
+  }
+  irprinter::IRNodeFinder ir(op.get());
+#endif
+
 
   auto ret = ir.parse();
   if (ret != 0) {
@@ -52,7 +61,7 @@ int main(int argc, const char** argv) {
   }
 
   llvm::LineEditor le("ir-printer");
-  while (llvm::Optional<std::string> line = le.readLine()) {
+  while (auto line = le.readLine()) {
     StringRef ref = *line;
     auto cmd      = lexWord(ref);
 
@@ -80,13 +89,13 @@ int main(int argc, const char** argv) {
         }
       }
       if (cmd == "p" || cmd == "print") {
-        ir.printFunction(str);
+        ir.printFunction(std::string{str});
       } else {
-        ir.listFunction(str);
+        ir.listFunction(std::string{str});
       }
     } else if (cmd == "d" || cmd == "demangle") {
       auto str            = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
-      auto demangled_name = irprinter::IRNodeFinder::demangle(str);
+      auto demangled_name = irprinter::IRNodeFinder::demangle(std::string{str});
       llvm::outs() << "Demangled name: " << demangled_name << "\n";
     }
 
