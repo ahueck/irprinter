@@ -20,7 +20,7 @@ function(add_format_target target comment)
   endforeach()
 
   find_program(FORMAT_COMMAND
-               NAMES clang-format clang-format-6.0 clang-format-5.0 clang-format-4.0)
+               NAMES clang-format clang-format-12 clang-format-14 clang-format-18)
   if(FORMAT_COMMAND)
     add_custom_target(${target}
       COMMAND ${FORMAT_COMMAND} -i -style=file ${ARG_OTHER} ${ARG_UNPARSED_ARGUMENTS}

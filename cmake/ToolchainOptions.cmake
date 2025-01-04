@@ -19,6 +19,8 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
+find_package(Clang REQUIRED HINTS "${Clang_DIR}")
+
 include(AddLLVM)
 include(clang-tidy)
 include(clang-format)
