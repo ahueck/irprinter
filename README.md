@@ -1,19 +1,19 @@
-# irprinter
+# irprinter &middot; ![License](https://img.shields.io/github/license/ahueck/irprinter)
 
-*irprinter* is a small commandline-based tool developed to explore LLVM IR code.
-The tool can print IR code of only specific functions, when dumping of the whole translation unit would produce too much output.
+*irprinter* is a command-line tool for exploring LLVM Intermediate Representation (IR) code. 
+It allows users to print IR code for specific functions, which is particularly useful when dumping the entire translation unit would result in excessive output.
 
 
-## Main features
-Print LLVM IR code of a translation unit (C/C++) to a console.
-  - Ability to modify and add compiler flags (e.g., replace `-g` with `-O2`) and re-generate the (modified) IR
-  - Regex matching of (demangled) function names, with the ability to print
-      1) Function signatures only, and,
-      2) Functions including body
-  - Dump whole IR code of the TU
+## Features
+* Print LLVM IR code for a translation unit (C/C++) to the console.
+* Modify and add compiler flags (e.g., replace -g with -O2) and regenerate the (modified) IR.
+* Regex matching of (demangled) function names, with options to print:
+  1. Function signatures only.
+  2. Functions including their bodies.
+* Dump the entire IR code of the translation unit.
 
 ## Usage
-See [main.cpp](src/main.cpp) for all possible commandline arguments.
+See [main.cpp](src/main.cpp) for all possible command-line arguments.
 
 ### Example of using *irprinter*
 Assume *test.c* contains the code:
@@ -72,13 +72,13 @@ define i32 @main() local_unnamed_addr #1 {
 
 ## How to build
 ###### Requirements
-- cmake >= 3.14
-- Clang/LLVM 10.0 (cmake needs to find the installation, see
-  the [LLVM cmake documentation](https://llvm.org/docs/CMake.html#id14))
-- C++ compiler with support for the C++17 standard, e.g., Clang 10
+- CMake >= 3.20
+- Clang/LLVM 12, 14, 18 (CMake needs to find the installation, see
+  the [LLVM CMake documentation](https://llvm.org/docs/CMake.html) or the [CI workflow](.github/workflows/basic-ci.yml))
+- C++17 compiler
 
 ###### Build steps
-In the root project folder, execute the following commands
+In the root project folder, execute the following commands (see also [CI workflow](.github/workflows/basic-ci.yml))
 
   ```
   cmake -B build -DCMAKE_INSTALL_PREFIX=*your path*
