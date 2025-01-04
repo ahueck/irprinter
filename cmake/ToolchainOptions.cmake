@@ -1,8 +1,21 @@
+include(FeatureSummary)
+
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 
-# Setup of all necessary include/lib dirs for the development of a Clang based tool
-find_package(LLVM 10 REQUIRED)
-find_package(Clang REQUIRED)
+find_package(LLVM CONFIG HINTS "${LLVM_DIR}")
+if(NOT LLVM_FOUND)
+  message(STATUS "LLVM not found at: ${LLVM_DIR}.")
+  find_package(LLVM REQUIRED CONFIG)
+endif()
+
+set_package_properties(LLVM PROPERTIES
+  URL https://llvm.org/
+  TYPE REQUIRED
+  PURPOSE
+  "LLVM framework installation required to compile."
+)
+
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
