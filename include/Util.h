@@ -9,9 +9,29 @@
 #include "llvm/Support/Regex.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/IR/Module.h"
 
 namespace irprinter::util {
+
+template <typename... StringTy>
+inline bool starts_with_any_of(llvm::StringRef lhs, StringTy... rhs) {
+#if LLVM_VERSION_MAJOR > 15
+  return !lhs.empty() && ((lhs.starts_with(rhs)) || ...);
+#else
+  return !lhs.empty() && ((lhs.startswith(rhs)) || ...);
+#endif
+}
+
+template <typename... StringTy>
+inline bool ends_with_any_of(llvm::StringRef lhs, StringTy... rhs) {
+#if LLVM_VERSION_MAJOR > 15
+  return !lhs.empty() && ((lhs.ends_with(rhs)) || ...);
+#else
+  return !lhs.empty() && ((lhs.endswith(rhs)) || ...);
+#endif
+}
 
 namespace detail {
 // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4502.pdf :
@@ -75,7 +95,7 @@ inline std::string dump(const Val& s) {
 template <typename String>
 inline std::string try_demangle(String s) {
   std::string name{s};
-#if LLVM_VERSION_MAJOR == 18
+#if LLVM_VERSION_MAJOR >= 18
   auto demangle = llvm::itaniumDemangle(s.data());
 #else
   auto demangle = llvm::itaniumDemangle(s.data(), nullptr, nullptr, nullptr);

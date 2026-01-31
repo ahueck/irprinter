@@ -6,7 +6,9 @@
  */
 
 #include "printer/LLVMTool.h"
+#include "Util.h"
 
+#include <llvm/Support/CommandLine.h>
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/CompilationDatabase.h>
 
@@ -29,7 +31,7 @@ ArgumentsAdjuster getStripOptFlagAdjuster() {
     CommandLineArguments AdjustedArgs;
     for (size_t i = 0, e = Args.size(); i < e; ++i) {
       StringRef Arg = Args[i];
-      if (!Arg.startswith("-O") && !Arg.startswith("-g")) {
+      if (!util::starts_with_any_of(Arg, "-O", "-g")) {
         AdjustedArgs.push_back(Args[i]);
       }
     }
@@ -49,7 +51,9 @@ class ExtractorAction : public CodeGenAction {
   bool BeginSourceFileAction(CompilerInstance& CI) {
     // FIXME workaround for error: "clang: Not enough positional command line arguments specified!"
     // when using clangtool, the commandline parser is executed twice, this removes a leftover causing the above error
+#if LLVM_VERSION_MAJOR < 19
     llvm::cl::TopLevelSubCommand->PositionalOpts.clear();
+#endif
     return CodeGenAction::BeginSourceFileAction(CI);
   }
 
@@ -118,7 +122,7 @@ void LLVMTool::clearUserFlags() {
 void LLVMTool::commitUserArgs() {
   for (auto& arg : user_args) {
     StringRef flag = arg;
-    if (flag.startswith("-O") || flag.startswith("-g")) {
+    if (util::starts_with_any_of(flag, "-O", "-g")) {
       tool.appendArgumentsAdjuster(combineAdjusters(
           adjuster::getStripOptFlagAdjuster(), getInsertArgumentAdjuster(flag.data(), ArgumentInsertPosition::END)));
     } else {
