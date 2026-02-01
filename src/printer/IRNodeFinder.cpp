@@ -8,6 +8,7 @@
 #include "printer/IRNodeFinder.h"
 #include "Util.h"
 
+#include <clang/Tooling/CommonOptionsParser.h>
 #include <llvm/Demangle/Demangle.h>
 #include <llvm/IR/DebugLoc.h>
 #include <llvm/IR/Function.h>
@@ -35,7 +36,13 @@ void applyToMatchingFunction(llvm::raw_ostream& os, const llvm::Module* m, const
 
 // using namespace util;
 
-IRNodeFinder::IRNodeFinder(clang::tooling::CommonOptionsParser& op, llvm::raw_ostream& os) : tool(op), os(os) {
+IRNodeFinder::IRNodeFinder(clang::tooling::CommonOptionsParser& op, llvm::raw_ostream& os)
+    : IRNodeFinder(op.getCompilations(), op.getSourcePathList(), os) {
+}
+
+IRNodeFinder::IRNodeFinder(const clang::tooling::CompilationDatabase& compilation_database,
+                           llvm::ArrayRef<std::string> SourcePaths, llvm::raw_ostream& os)
+    : tool(compilation_database, SourcePaths), os(os) {
 }
 
 int IRNodeFinder::parse() {

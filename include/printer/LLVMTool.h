@@ -9,8 +9,10 @@
 #define SRC_PRINTER_LLVMTOOL_H_
 
 #include <clang/Tooling/ArgumentsAdjusters.h>
+#include <clang/Tooling/CompilationDatabase.h>
 #include <clang/Tooling/Tooling.h>
 
+#include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/LLVMContext.h>
@@ -35,6 +37,7 @@ class LLVMTool {
 
  public:
   explicit LLVMTool(clang::tooling::CommonOptionsParser&);
+  LLVMTool(const clang::tooling::CompilationDatabase&, llvm::ArrayRef<std::string> SourcePaths);
 
   int execute();
 

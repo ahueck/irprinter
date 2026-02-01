@@ -86,7 +86,11 @@ std::unique_ptr<tooling::FrontendActionFactory> CreateExtractorActionFactory(LLV
 
 }  // namespace action
 
-LLVMTool::LLVMTool(CommonOptionsParser& op) : tool(op.getCompilations(), op.getSourcePathList()) {
+LLVMTool::LLVMTool(CommonOptionsParser& op) : LLVMTool(op.getCompilations(), op.getSourcePathList()) {
+}
+
+LLVMTool::LLVMTool(const CompilationDatabase& compilation_database, ArrayRef<std::string> source_path)
+    : tool(compilation_database, source_path) {
 }
 
 int LLVMTool::execute() {

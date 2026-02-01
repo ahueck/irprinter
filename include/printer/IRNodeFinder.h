@@ -28,6 +28,8 @@ class IRNodeFinder {
 
  public:
   explicit IRNodeFinder(clang::tooling::CommonOptionsParser& op, llvm::raw_ostream& os = llvm::outs());
+  IRNodeFinder(const clang::tooling::CompilationDatabase& compilation_database, llvm::ArrayRef<std::string> SourcePaths,
+               llvm::raw_ostream& os = llvm::outs());
 
   int parse();
 
