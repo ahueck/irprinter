@@ -9,8 +9,11 @@
 #include "Util.h"
 
 #include <llvm/Demangle/Demangle.h>
+#include <llvm/IR/DebugLoc.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
 
 using namespace llvm;
 
@@ -50,6 +53,36 @@ void IRNodeFinder::setOptFlag(StringRef flag) {
 void IRNodeFinder::printFunction(const std::string& regex) const {
   const auto* m = tool.getModule();
   applyToMatchingFunction(os, m, regex, [&](const Function* f) { f->print(os); });
+}
+
+void IRNodeFinder::printByLocation(unsigned line_start_, unsigned line_end_) const {
+  line_end_ = std::max(line_start_, line_end_);
+  std::string matches;
+  llvm::raw_string_ostream local_oss{matches};
+  bool first_match{false};
+  const auto* m = tool.getModule();
+  for (const auto& f : *m) {
+    first_match = false;
+    for (const auto& bb : f) {
+      for (const auto& inst : bb) {
+        const auto& loc = inst.getDebugLoc();
+        if (loc) {
+          const auto line = loc.getLine();
+          if (line >= line_start_ && line <= line_end_) {
+            if (!first_match) {
+              local_oss << f.getName() << ":\n";
+              first_match = true;
+            }
+            inst.print(local_oss);
+            local_oss << "\n";
+          }
+        }
+      }
+    }
+  }
+  if (!local_oss.str().empty()) {
+    os << local_oss.str() << "\n";
+  }
 }
 
 void IRNodeFinder::listFunction(const std::string& regex) const {

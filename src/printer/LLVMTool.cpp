@@ -8,9 +8,9 @@
 #include "printer/LLVMTool.h"
 #include "Util.h"
 
-#include <llvm/Support/CommandLine.h>
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/CompilationDatabase.h>
+#include <llvm/Support/CommandLine.h>
 
 #include <clang/CodeGen/BackendUtil.h>
 #include <clang/CodeGen/CodeGenAction.h>

@@ -37,6 +37,8 @@ class IRNodeFinder {
 
   void printFunction(const std::string& regex = ".*") const;
 
+  void printByLocation(unsigned line_start_, unsigned line_end_ = 0) const;
+
   void listFunction(const std::string& regex = ".*") const;
 
   static std::string demangle(const std::string& name);
