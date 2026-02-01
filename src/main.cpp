@@ -1,11 +1,11 @@
 #include <printer/IRNodeFinder.h>
 
 #include <clang/Tooling/CommonOptionsParser.h>
-#include <llvm/Support/Regex.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/Module.h>
 #include <llvm/LineEditor/LineEditor.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Regex.h>
 #include <llvm/Support/raw_ostream.h>
 
 using namespace llvm;
@@ -53,7 +53,6 @@ int main(int argc, const char** argv) {
   irprinter::IRNodeFinder ir(op.get());
 #endif
 
-
   auto ret = ir.parse();
   if (ret != 0) {
     llvm::outs() << "Error parsing. Quitting...\n";
@@ -67,6 +66,20 @@ int main(int argc, const char** argv) {
 
     if (cmd == "q" || cmd == "quit") {
       break;
+    } else if (unsigned start; !cmd.getAsInteger(10, start)) {
+      auto end_ref = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
+      unsigned end{start};
+      if (!end_ref.empty()) {
+        if (end_ref.getAsInteger(10, end)) {
+          llvm::outs() << "Invalid end location: " << end_ref << "\n";
+          continue;
+        }
+      }
+      if (end < start) {
+        llvm::outs() << "Error: end location (" << end << ") is less than start location (" << start << ")\n";
+      } else {
+        ir.printByLocation(start, end);
+      }
     } else if (cmd == "g" || cmd == "generate") {
       ir.parse();
     } else if (cmd == "f" || cmd == "flag") {
@@ -98,7 +111,6 @@ int main(int argc, const char** argv) {
       auto demangled_name = irprinter::IRNodeFinder::demangle(std::string{str});
       llvm::outs() << "Demangled name: " << demangled_name << "\n";
     }
-
     llvm::outs().flush();
   }
 

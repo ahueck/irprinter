@@ -11,18 +11,31 @@ env:
 
 jobs:
   format-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-18 main" | sudo tee /etc/apt/sources.list.d/llvm-18.list
+
+      - name: Update apt
+        run: sudo apt-get update
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get remove clang-format-*
+          sudo apt-get install -t llvm-toolchain-noble-18 clang-format-18
 
       - name: Format source code
         run: |
           find demo lib test \
             -type f \
             -a \( -name "*.c" -o -name "*.cpp" -o -name "*.h" \) \
+            -not -path "*/lulesh/*" -not -path "*/CallSite.h" \
             -print0 \
-            | xargs -0 clang-format-14 -i
+            | xargs -0 clang-format-18 -i
 
       - name: Format check
         run: |
@@ -33,28 +46,34 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: codespell-project/actions-codespell@v2
+      - uses: actions/checkout@v5
+      - uses: codespell-project/actions-codespell@v2.2
 
   build-project:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - llvm-version: 12
-            os: ubuntu-20.04
-            preset: develop
           - llvm-version: 14
             os: ubuntu-22.04
             preset: develop
           - llvm-version: 18
             os: ubuntu-24.04
             preset: develop
+          - llvm-version: 21
+            os: ubuntu-24.04
+            preset: develop
 
     runs-on: ${{ matrix.os }}
  
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
+      - name: LLVM apt
+        if: ${{ matrix.llvm-version >= 19 }}
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-${{ matrix.llvm-version }} main" | sudo tee /etc/apt/sources.list.d/llvm-${{ matrix.llvm-version }}.list
 
       - name: Update apt
         run: sudo apt-get update
