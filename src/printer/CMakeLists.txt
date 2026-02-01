@@ -12,7 +12,8 @@ target_project_compile_definitions(llvm-ir-print
 
 target_include_directories(llvm-ir-print
   PUBLIC
-  ${PROJECT_SOURCE_DIR}/include
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 target_include_directories(llvm-ir-print 
@@ -30,13 +31,10 @@ install(
   TARGETS llvm-ir-print
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
-  PUBLIC_HEADER DESTINATION include
 )
 
 install(
-  FILES 
-    ${PROJECT_SOURCE_DIR}/include/printer/IRNodeFinder.h
-    ${PROJECT_SOURCE_DIR}/include/printer/LLVMTool.h
+  DIRECTORY ${PROJECT_SOURCE_DIR}/include/
   DESTINATION include
 )
 

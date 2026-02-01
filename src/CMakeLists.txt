@@ -11,11 +11,6 @@ target_project_compile_definitions(llvm-ir-printer${EXE_SUFFIX}
     LOG_LEVEL=${LOG_LEVEL}
 )
 
-target_include_directories(llvm-ir-printer${EXE_SUFFIX}
-  PRIVATE
-  ${PROJECT_SOURCE_DIR}/include
-  )
-
 target_link_libraries(llvm-ir-printer${EXE_SUFFIX}
   LLVMLineEditor
   llvm-ir-print
@@ -24,7 +19,4 @@ target_link_libraries(llvm-ir-printer${EXE_SUFFIX}
 install(
   TARGETS llvm-ir-printer${EXE_SUFFIX}
   RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  PUBLIC_HEADER DESTINATION include
 )
