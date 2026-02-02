@@ -17,7 +17,7 @@ list(APPEND CMAKE_MODULE_PATH
 include(ToolchainOptions)
 include(CMakePackageConfigHelpers)
 
-add_format_target(format-sources
+irprinter_add_format_target(format-sources
   "Formats project source files"
   TARGETS src/*.cpp
           include/*.h

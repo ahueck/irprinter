@@ -91,6 +91,14 @@ LLVMTool::LLVMTool(CommonOptionsParser& op) : LLVMTool(op.getCompilations(), op.
 
 LLVMTool::LLVMTool(const CompilationDatabase& compilation_database, ArrayRef<std::string> source_path)
     : tool(compilation_database, source_path) {
+#ifdef IRPRINTER_CLANG_RESOURCE_DIR
+  const std::string resource_dir = IRPRINTER_CLANG_RESOURCE_DIR;
+  if (!resource_dir.empty()) {
+    const std::string resource_arg = "-resource-dir=" + resource_dir;
+    tool.appendArgumentsAdjuster(
+        clang::tooling::getInsertArgumentAdjuster(resource_arg.c_str(), clang::tooling::ArgumentInsertPosition::BEGIN));
+  }
+#endif
 }
 
 int LLVMTool::execute() {

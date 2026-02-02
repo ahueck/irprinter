@@ -29,6 +29,20 @@ include(target-util)
 
 set(LOG_LEVEL 0 CACHE STRING "Granularity of the logger. 3 is most verbose, 0 is least.")
 
+option(IRPRINTER_AUTO_RESOURCE_DIR "Try to automatically set the Clang resource directory" OFF)
+
+if(IRPRINTER_AUTO_RESOURCE_DIR AND NOT IRPRINTER_CLANG_RESOURCE_DIR)
+  find_program(CLANG_EXECUTABLE NAMES clang-${LLVM_VERSION_MAJOR} clang)
+  if(CLANG_EXECUTABLE)
+    execute_process(
+      COMMAND ${CLANG_EXECUTABLE} -print-resource-dir
+      OUTPUT_VARIABLE CLANG_RESOURCE_DIR_VAR
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(IRPRINTER_CLANG_RESOURCE_DIR ${CLANG_RESOURCE_DIR_VAR} CACHE STRING "Clang resource directory")
+  endif()
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
   message(STATUS "Building as debug (default)")

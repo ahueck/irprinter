@@ -1,4 +1,4 @@
-function(add_format_target target comment)
+function(irprinter_add_format_target target comment)
   macro(filter_dir _dir_name_)
     foreach (SOURCE_FILE ${ALL_CXX_FILES})
       string(FIND ${SOURCE_FILE} ${_dir_name_} EXCLUDE_FOUND)
@@ -20,7 +20,7 @@ function(add_format_target target comment)
   endforeach()
 
   find_program(FORMAT_COMMAND
-               NAMES clang-format clang-format-12 clang-format-14 clang-format-18)
+               NAMES clang-format-${LLVM_VERSION_MAJOR} clang-format)
   if(FORMAT_COMMAND)
     add_custom_target(${target}
       COMMAND ${FORMAT_COMMAND} -i -style=file ${ARG_OTHER} ${ARG_UNPARSED_ARGUMENTS}

@@ -41,8 +41,8 @@ IRNodeFinder::IRNodeFinder(clang::tooling::CommonOptionsParser& op, llvm::raw_os
 }
 
 IRNodeFinder::IRNodeFinder(const clang::tooling::CompilationDatabase& compilation_database,
-                           llvm::ArrayRef<std::string> SourcePaths, llvm::raw_ostream& os)
-    : tool(compilation_database, SourcePaths), os(os) {
+                           llvm::ArrayRef<std::string> source_path, llvm::raw_ostream& os)
+    : tool(compilation_database, source_path), os(os) {
 }
 
 int IRNodeFinder::parse() {

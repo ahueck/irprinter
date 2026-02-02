@@ -1,4 +1,4 @@
-function(target_project_compile_options target)
+function(irprinter_target_project_compile_options target)
   cmake_parse_arguments(ARG "" "" "PRIVATE_FLAGS;PUBLIC_FLAGS" ${ARGN})
 
   target_compile_options(${target} PRIVATE
@@ -22,7 +22,7 @@ function(target_project_compile_options target)
   endif ()
 endfunction()
 
-function(target_project_compile_definitions target)
+function(irprinter_target_project_compile_definitions target)
   cmake_parse_arguments(ARG "" "" "PRIVATE_DEFS;PUBLIC_DEFS" ${ARGN})
 
   if (ARG_PRIVATE_DEFS)

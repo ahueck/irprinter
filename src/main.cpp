@@ -1,6 +1,7 @@
 #include <printer/IRNodeFinder.h>
 
 #include <clang/Tooling/CommonOptionsParser.h>
+#include <clang/Tooling/CompilationDatabase.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/Module.h>
 #include <llvm/LineEditor/LineEditor.h>
@@ -43,19 +44,24 @@ StringRef lexWord(StringRef word) {
 int main(int argc, const char** argv) {
 #if LLVM_VERSION_MAJOR < 14
   CommonOptionsParser op(argc, argv, IRPrinter);
-  irprinter::IRNodeFinder ir(op);
+  const auto& sources      = op.getSourcePathList();
+  const auto& compilations = op.getCompilations();
 #else
-  auto op = CommonOptionsParser::create(argc, argv, IRPrinter);
-  if (!op) {
+  auto op_res = CommonOptionsParser::create(argc, argv, IRPrinter);
+  if (!op_res) {
     llvm::outs() << "Erroneous input";
     return 1;
   }
-  irprinter::IRNodeFinder ir(op.get());
+  auto& op                 = op_res.get();
+  const auto& sources      = op.getSourcePathList();
+  const auto& compilations = op.getCompilations();
 #endif
+
+  irprinter::IRNodeFinder ir(compilations, sources);
 
   auto ret = ir.parse();
   if (ret != 0) {
-    llvm::outs() << "Error parsing. Quitting...\n";
+    llvm::errs() << "Error parsing. Quitting...\n";
     return ret;
   }
 

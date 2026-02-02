@@ -1,4 +1,4 @@
-function(add_tidy_target target comment)
+function(irprinter_add_tidy_target target comment)
   macro(filter_dir _name_)
     foreach (SOURCE_FILE ${ARG_SOURCES})
       string(FIND ${SOURCE_FILE} ${_name_} EXCLUDE_FOUND)
@@ -15,7 +15,7 @@ function(add_tidy_target target comment)
   endforeach()
 
   find_program(TIDY_COMMAND
-               NAMES clang-tidy clang-tidy-12 clang-tidy-14 clang-tidy-18)
+               NAMES clang-tidy-${LLVM_VERSION_MAJOR} clang-tidy)
   if(TIDY_COMMAND)
     add_custom_target(${target}
       COMMAND ${TIDY_COMMAND} -p ${CMAKE_BINARY_DIR}
@@ -33,23 +33,23 @@ function(add_tidy_target target comment)
   endif()
 endfunction()
 
-function(add_tidy_fix_target target comment)
+function(irprinter_add_tidy_fix_target target comment)
   cmake_parse_arguments(ARG "" "" "SOURCES;EXCLUDES;OTHER" ${ARGN})
-  add_tidy_target(${target} "${comment}"
+  irprinter_add_tidy_target(${target} "${comment}"
     SOURCES ${ARG_SOURCES}
     EXCLUDES ${ARG_EXCLUDES}
     OTHER ${ARG_OTHER} -fix
   )
 endfunction()
 
-function(make_tidy_check name sources)
-  add_tidy_target(tidy-run-on-${name}
+function(irprinter_make_tidy_check name sources)
+  irprinter_add_tidy_target(tidy-run-on-${name}
     "Clang-tidy run on ${name} translation units"
     SOURCES ${sources}
     OTHER --header-filter=${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-  add_tidy_fix_target(tidy-fix-on-${name}
+  irprinter_add_tidy_fix_target(tidy-fix-on-${name}
     "Clang-tidy run with fixes on ${name} translation units"
     SOURCES ${sources}
     OTHER --header-filter=${CMAKE_CURRENT_SOURCE_DIR} -checks=-*,modernize-*,llvm-namespace-comment,google-explicit-constructor
