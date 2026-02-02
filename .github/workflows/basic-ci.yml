@@ -94,10 +94,10 @@ jobs:
 
       - name: Build IRPrinter
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Debug -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR}
+          cmake --preset develop -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR}
           cmake --build build --parallel
 
       - name: Build IRPrinter release
         run: |
-          cmake -B build_rel -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR}
+          cmake --preset release -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR}
           cmake --build build_rel --parallel --target install
