@@ -10,11 +10,15 @@
 
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <llvm/Demangle/Demangle.h>
+#include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/DebugLoc.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Path.h>
 #include <llvm/Support/raw_ostream.h>
+#include <optional>
 
 using namespace llvm;
 
@@ -75,13 +79,43 @@ void IRNodeFinder::printByLocation(unsigned line_start_, unsigned line_end_) con
   llvm::raw_string_ostream local_oss{matches};
   bool first_match{false};
   const auto* m = tool.getModule();
+
+  std::optional<SmallString<128>> main_file;
+  if (auto* CUs = m->getNamedMetadata("llvm.dbg.cu")) {
+    if (CUs->getNumOperands() > 0) {
+      auto* cu = cast<DICompileUnit>(CUs->getOperand(0));
+      SmallString<128> path;
+      if (!llvm::sys::fs::real_path(cu->getFilename(), path)) {
+        main_file = path;
+      }
+    }
+  }
+
   for (const auto& f : *m) {
+    {  // check if we are in main file:
+      auto* fun_sub_prog = f.getSubprogram();
+      if (!fun_sub_prog) {
+        continue;
+      }
+      if (main_file) {
+        SmallString<128> fun_path;
+        if (!llvm::sys::fs::real_path(fun_sub_prog->getFilename(), fun_path)) {
+          if (fun_path != *main_file) {
+            continue;
+          }
+        }
+      }
+    }
     first_match = false;
     for (const auto& bb : f) {
       for (const auto& inst : bb) {
         const auto& loc = inst.getDebugLoc();
         if (loc) {
-          const auto line = loc.getLine();
+          const auto line    = loc.getLine();
+          const bool inlined = loc.getInlinedAt() != nullptr;
+          if (!inlined && line > line_end_) {
+            break;
+          }
           if (line >= line_start_ && line <= line_end_) {
             if (!first_match) {
               local_oss << f.getName() << ":\n";
