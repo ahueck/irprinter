@@ -57,9 +57,6 @@ jobs:
           - llvm-version: 14
             os: ubuntu-22.04
             preset: develop
-          - llvm-version: 18
-            os: ubuntu-24.04
-            preset: develop
           - llvm-version: 21
             os: ubuntu-24.04
             preset: develop
