@@ -8,6 +8,9 @@ config.suffixes = ['.cpp', '.c', '.ll']
 
 config.test_source_root = os.path.dirname(__file__)
 
+if config.llvm_version:
+    config.available_features.add(f"llvm-{config.llvm_version}")
+
 # Substitutions
 config.substitutions.append(('%llvm-ir-printer', config.llvm_ir_printer_binary))
 config.substitutions.append(('%filecheck', config.filecheck_binary))

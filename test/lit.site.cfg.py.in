@@ -7,6 +7,7 @@ config.llvm_cov_exe = "@IRPRINTER_COV_EXEC@"
 config.enable_coverage = "@IRPRINTER_ENABLE_COVERAGE@"
 config.test_source_root = "@CMAKE_CURRENT_SOURCE_DIR@"
 config.test_exec_root = "@CMAKE_CURRENT_BINARY_DIR@"
+config.llvm_version = "@LLVM_VERSION_MAJOR@"
 
 # Let the main config do the real work.
 lit_config.load_config(config, os.path.join(config.test_source_root, "lit.cfg.py"))
