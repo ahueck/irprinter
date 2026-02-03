@@ -27,9 +27,10 @@ include(clang-format)
 include(log-util)
 include(target-util)
 
-set(LOG_LEVEL 0 CACHE STRING "Granularity of the logger. 3 is most verbose, 0 is least.")
+set(IRPRINTER_LOG_LEVEL 0 CACHE STRING "Granularity of the logger. 3 is most verbose, 0 is least.")
 
 option(IRPRINTER_AUTO_RESOURCE_DIR "Try to automatically set the Clang resource directory" OFF)
+option(IRPRINTER_ENABLE_COVERAGE "Enable LLVM-based coverage" OFF)
 
 if(IRPRINTER_AUTO_RESOURCE_DIR AND NOT IRPRINTER_CLANG_RESOURCE_DIR)
   find_program(CLANG_EXECUTABLE NAMES clang-${LLVM_VERSION_MAJOR} clang)

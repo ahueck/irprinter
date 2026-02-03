@@ -1,6 +1,6 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21)
 PROJECT(irprinter
-  VERSION 0.3
+  VERSION 0.4
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -24,3 +24,6 @@ irprinter_add_format_target(format-sources
 )
 
 add_subdirectory(src)
+if(PROJECT_IS_TOP_LEVEL)
+  add_subdirectory(test)
+endif()
