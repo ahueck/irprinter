@@ -73,63 +73,67 @@ void IRNodeFinder::printFunction(const std::string& regex) const {
   applyToMatchingFunction(os, m, regex, [&](const Function* f) { f->print(os); });
 }
 
-void IRNodeFinder::printByLocation(unsigned line_start_, unsigned line_end_) const {
-  line_end_ = std::max(line_start_, line_end_);
-  std::string matches;
-  llvm::raw_string_ostream local_oss{matches};
-  bool first_match{false};
-  const auto* m = tool.getModule();
+void IRNodeFinder::printByLocation(unsigned line_start, unsigned line_end) const {
+  const unsigned search_end = std::max(line_start, line_end);
+  const auto* module        = tool.getModule();
+  const auto main_file_path = [&](const llvm::Module* m) -> std::optional<std::string> {
+    auto* CUs = m->getNamedMetadata("llvm.dbg.cu");
+    if (!CUs || CUs->getNumOperands() == 0) {
+      return std::nullopt;
+    }
+    auto* cu = llvm::cast<llvm::DICompileUnit>(CUs->getOperand(0));
+    llvm::SmallString<128> path;
+    if (!llvm::sys::fs::real_path(cu->getFilename(), path)) {
+      return path.str().str();
+    }
+    return std::nullopt;
+  }(module);
 
-  std::optional<SmallString<128>> main_file;
-  if (auto* CUs = m->getNamedMetadata("llvm.dbg.cu")) {
-    if (CUs->getNumOperands() > 0) {
-      auto* cu = cast<DICompileUnit>(CUs->getOperand(0));
-      SmallString<128> path;
-      if (!llvm::sys::fs::real_path(cu->getFilename(), path)) {
-        main_file = path;
+  const auto is_relevant_function = [&](const llvm::Function& func) -> bool {
+    const auto* sub = func.getSubprogram();
+    if (!sub) {
+      return false;
+    }
+    // TODO: investigate w.r.t. inlining?
+    // if (sub->getLine() > search_end) {
+    //   return false;
+    // }
+    if (main_file_path) {
+      llvm::SmallString<128> func_path;
+      if (!llvm::sys::fs::real_path(sub->getFilename(), func_path)) {
+        return func_path == *main_file_path;
       }
     }
-  }
+    return true;
+  };
 
-  for (const auto& f : *m) {
-    {  // check if we are in main file:
-      auto* fun_sub_prog = f.getSubprogram();
-      if (!fun_sub_prog) {
-        continue;
-      }
-      if (main_file) {
-        SmallString<128> fun_path;
-        if (!llvm::sys::fs::real_path(fun_sub_prog->getFilename(), fun_path)) {
-          if (fun_path != *main_file) {
-            continue;
-          }
-        }
-      }
-    }
-    first_match = false;
-    for (const auto& bb : f) {
-      for (const auto& inst : bb) {
+  std::string matches_buffer;
+  llvm::raw_string_ostream buffer_stream{matches_buffer};
+
+  for (const auto& func : llvm::make_filter_range(*module, is_relevant_function)) {
+    bool function_header_printed = false;
+    for (const auto& block : func) {
+      for (const auto& inst : block) {
         const auto& loc = inst.getDebugLoc();
-        if (loc) {
-          const auto line    = loc.getLine();
-          const bool inlined = loc.getInlinedAt() != nullptr;
-          if (!inlined && line > line_end_) {
-            break;
+        if (!loc) {
+          continue;
+        }
+        const unsigned line = loc.getLine();
+
+        if (line >= line_start && line <= search_end) {
+          if (!function_header_printed) {
+            buffer_stream << func.getName() << ":\n";
+            function_header_printed = true;
           }
-          if (line >= line_start_ && line <= line_end_) {
-            if (!first_match) {
-              local_oss << f.getName() << ":\n";
-              first_match = true;
-            }
-            inst.print(local_oss);
-            local_oss << "\n";
-          }
+          inst.print(buffer_stream);
+          buffer_stream << "\n";
         }
       }
     }
   }
-  if (!local_oss.str().empty()) {
-    os << local_oss.str() << "\n";
+
+  if (!buffer_stream.str().empty()) {
+    os << buffer_stream.str() << "\n";
   }
 }
 
