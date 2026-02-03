@@ -133,7 +133,10 @@ inline llvm::SmallVector<const llvm::Function*, 4> regex_find(const llvm::Module
   if (use_mangle) {
     return detail::find(m, [&](const llvm::Function& f) { return r.match(f.getName()); });
   } else {
-    return detail::find(m, [&](const llvm::Function& f) { return r.match(try_demangle(f.getName())); });
+    return detail::find(m, [&](const llvm::Function& f) {
+      std::string name = try_demangle(f.getName());
+      return r.match(name);
+    });
   }
 }
 

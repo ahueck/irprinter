@@ -92,12 +92,18 @@ jobs:
           echo "CLANG_CMAKE_DIR=/usr/lib/llvm-${{ matrix.llvm-version }}/lib/cmake/clang" >> $GITHUB_ENV
           echo "EXTERNAL_LIT=/usr/lib/llvm-${{ matrix.llvm-version }}/build/utils/lit/lit.py" >> $GITHUB_ENV
 
-      - name: Build IRPrinter
-        run: |
-          cmake --preset develop -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR}
-          cmake --build build --parallel
-
       - name: Build IRPrinter release
         run: |
-          cmake --preset release -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR}
+          cmake --preset release -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR} -DLLVM_EXTERNAL_LIT=${EXTERNAL_LIT}
           cmake --build build_rel --parallel --target install
+
+      - name: Test and Coverage
+        run: |
+          cmake --preset coverage -DLLVM_DIR=${LLVM_CMAKE_DIR} -DClang_DIR=${CLANG_CMAKE_DIR} -DLLVM_EXTERNAL_LIT=${EXTERNAL_LIT}
+          cmake --build build_cov --target coverage-irprinter
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-report-llvm${{ matrix.llvm-version }}
+          path: build_cov/coverage_report/

@@ -21,13 +21,20 @@ using namespace llvm;
 namespace irprinter {
 
 namespace {
+std::string strip_parens(std::string name) {
+  if (name.size() > 2 && name.substr(name.size() - 2) == "()") {
+    name.erase(name.size() - 2);
+  }
+  return name;
+}
+
 template <typename F>
 void applyToMatchingFunction(llvm::raw_ostream& os, const llvm::Module* m, const std::string& regex, F&& func) {
   const auto fvec = util::regex_find(*m, regex);
   unsigned count{0};
   for (auto f : fvec) {
     auto fname = f->getName();
-    os << "Match " << ++count << " [" << util::try_demangle(fname) << "]:";
+    os << "Match " << ++count << " [" << strip_parens(util::try_demangle(fname)) << "]:";
     func(f);
     os << "\n";
   }
@@ -101,7 +108,7 @@ void IRNodeFinder::listFunction(const std::string& regex) const {
     oss.flush();
 
     if (f->isDeclaration()) {
-      os << "\n" << s.substr(1);
+      os << "\n" << s;
     } else {
       llvm::Regex r("((;|define)[^{]+){");
       SmallVector<StringRef, 2> match;
@@ -114,7 +121,7 @@ void IRNodeFinder::listFunction(const std::string& regex) const {
 }
 
 std::string IRNodeFinder::demangle(const std::string& name) {
-  return util::try_demangle(name);
+  return strip_parens(util::try_demangle(name));
 }
 
 } /* namespace irprinter */
