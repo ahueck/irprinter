@@ -87,19 +87,9 @@ int main(int argc, const char** argv) {
       } else {
         ir.printByLocation(start, end, include_deps);
       }
-    } else if (cmd == "dep" || cmd == "deps") {
-      auto arg = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
-      if (arg.empty()) {
-        llvm::outs() << "Dependency expansion is " << (include_deps ? "on" : "off") << "\n";
-      } else if (arg == "on") {
-        include_deps = true;
-        llvm::outs() << "Dependency expansion enabled\n";
-      } else if (arg == "off") {
-        include_deps = false;
-        llvm::outs() << "Dependency expansion disabled\n";
-      } else {
-        llvm::outs() << "Invalid dep option: " << arg << " (expected: on|off)\n";
-      }
+    } else if (cmd == "deps") {
+      include_deps = !include_deps;
+      llvm::outs() << "Dependency expansion " << (include_deps ? "enabled" : "disabled") << "\n";
     } else if (cmd == "g" || cmd == "generate") {
       ir.parse();
     } else if (cmd == "f" || cmd == "flag") {

@@ -49,11 +49,13 @@ void applyToMatchingFunction(llvm::raw_ostream& os, const llvm::Module* m, const
 
 struct LineInstruction {
   const llvm::Instruction* inst;
+  const llvm::BasicBlock* block;
   unsigned line;
   bool is_dependency{false};
 
-  LineInstruction(const llvm::Instruction* inst, unsigned line, bool is_dependency = false)
-      : inst(inst), line(line), is_dependency(is_dependency) {
+  LineInstruction(const llvm::Instruction* inst, const llvm::BasicBlock* block, unsigned line,
+                  bool is_dependency = false)
+      : inst(inst), block(block), line(line), is_dependency(is_dependency) {
   }
 };
 
@@ -67,18 +69,52 @@ struct FunctionInstructions {
 };
 
 using LineMap = std::vector<FunctionInstructions>;
+using InstructionSet = std::unordered_set<const llvm::Instruction*>;
+using InstructionList = std::vector<const llvm::Instruction*>;
 
-LineMap collect_line_map(const llvm::Module* module, unsigned line_start, unsigned search_end,
-                         const std::optional<std::string>& main_file_path, bool include_deps) {
-  const auto is_relevant_function = [&](const llvm::Function& func) -> bool {
+std::optional<std::string> get_main_file_path(const llvm::Module* module) {
+  auto* CUs = module->getNamedMetadata("llvm.dbg.cu");
+  if (!CUs || CUs->getNumOperands() == 0) {
+    return std::nullopt;
+  }
+
+  auto* cu = llvm::cast<llvm::DICompileUnit>(CUs->getOperand(0));
+  llvm::SmallString<128> path;
+  if (!llvm::sys::fs::real_path(cu->getFilename(), path)) {
+    return path.str().str();
+  }
+  return std::nullopt;
+}
+
+struct LineMapBuilder {
+  const llvm::Module* module;
+  const std::optional<std::string>& main_file_path;
+  unsigned line_start;
+  unsigned search_end;
+  bool include_deps;
+
+  InstructionSet seed_instructions;
+  InstructionList seed_worklist;
+  InstructionSet dependency_instructions;
+  LineMap ordered_line_map;
+  std::unordered_map<const llvm::Function*, std::size_t> function_to_index;
+
+  LineMapBuilder(const llvm::Module* module, const std::optional<std::string>& main_file_path, unsigned line_start,
+                 unsigned search_end, bool include_deps)
+      : module(module),
+        main_file_path(main_file_path),
+        line_start(line_start),
+        search_end(search_end),
+        include_deps(include_deps) {
+  }
+
+  bool is_relevant_function(const llvm::Function& func) const {
     const auto* sub = func.getSubprogram();
     if (!sub) {
       return false;
     }
-    // TODO: investigate w.r.t. inlining?
-    // if (sub->getLine() > search_end) {
-    //   return false;
-    // }
+
+    // TODO: investigate function location filtering w.r.t. inlining.
     if (main_file_path) {
       llvm::SmallString<128> func_path;
       if (!llvm::sys::fs::real_path(sub->getFilename(), func_path)) {
@@ -86,34 +122,51 @@ LineMap collect_line_map(const llvm::Module* module, unsigned line_start, unsign
       }
     }
     return true;
-  };
+  }
 
-  std::unordered_set<const llvm::Instruction*> seed_instructions;
-  std::vector<const llvm::Instruction*> seed_worklist;
+  template <typename F>
+  void for_each_relevant_instruction(F&& visitor) const {
+    const auto relevant_functions = llvm::make_filter_range(*module, [&](const llvm::Function& func) {
+      return is_relevant_function(func);
+    });
 
-  // Phase 1: collect direct line matches (seeds).
-  for (const auto& func : llvm::make_filter_range(*module, is_relevant_function)) {
-    for (const auto& block : func) {
-      for (const auto& inst : block) {
-        const auto& loc = inst.getDebugLoc();
-        if (!loc) {
-          continue;
-        }
-        const unsigned line = loc.getLine();
-        if (line >= line_start && line <= search_end) {
-          if (seed_instructions.emplace(&inst).second) {
-            seed_worklist.push_back(&inst);
-          }
+    for (const auto& func : relevant_functions) {
+      for (const auto& block : func) {
+        for (const auto& inst : block) {
+          visitor(func, block, inst);
         }
       }
     }
   }
 
-  // Phase 2: collect recursive backward dependencies from seeds.
-  std::unordered_set<const llvm::Instruction*> dep_instructions;
-  if (include_deps) {
-    std::unordered_set<const llvm::Instruction*> visited_instructions = seed_instructions;
-    auto worklist                                                     = seed_worklist;
+  static unsigned instruction_line_or_zero(const llvm::Instruction& inst) {
+    const auto& loc = inst.getDebugLoc();
+    return loc ? loc.getLine() : 0;
+  }
+
+  void collect_seed_instructions() {
+    for_each_relevant_instruction([&](const llvm::Function&, const llvm::BasicBlock&, const llvm::Instruction& inst) {
+      const auto& loc = inst.getDebugLoc();
+      if (!loc) {
+        return;
+      }
+
+      const unsigned line = loc.getLine();
+      if (line >= line_start && line <= search_end) {
+        if (seed_instructions.emplace(&inst).second) {
+          seed_worklist.push_back(&inst);
+        }
+      }
+    });
+  }
+
+  void collect_backward_dependencies() {
+    if (!include_deps) {
+      return;
+    }
+
+    InstructionSet visited = seed_instructions;
+    auto worklist = seed_worklist;
     while (!worklist.empty()) {
       const llvm::Instruction* current = worklist.back();
       worklist.pop_back();
@@ -123,44 +176,74 @@ LineMap collect_line_map(const llvm::Module* module, unsigned line_start, unsign
         if (!operand_inst) {
           continue;
         }
-        if (!visited_instructions.emplace(operand_inst).second) {
+        if (!visited.emplace(operand_inst).second) {
           continue;
         }
 
-        dep_instructions.emplace(operand_inst);
+        dependency_instructions.emplace(operand_inst);
         worklist.push_back(operand_inst);
       }
     }
   }
 
-  // Phase 3: build ordered line map from seeds + deps.
-  LineMap matches;
-  std::unordered_map<const llvm::Function*, std::size_t> function_to_index;
-  const auto ensure_function_bucket = [&](const llvm::Function* func) -> FunctionInstructions& {
-    const auto [it, inserted] = function_to_index.emplace(func, matches.size());
+  FunctionInstructions& ensure_function_bucket(const llvm::Function* func) {
+    const auto [it, inserted] = function_to_index.emplace(func, ordered_line_map.size());
     if (inserted) {
-      matches.emplace_back(func, std::vector<LineInstruction>{});
+      ordered_line_map.emplace_back(func, std::vector<LineInstruction>{});
     }
-    return matches[it->second];
-  };
-
-  for (const auto& func : llvm::make_filter_range(*module, is_relevant_function)) {
-    for (const auto& block : func) {
-      for (const auto& inst : block) {
-        const bool is_seed = seed_instructions.find(&inst) != seed_instructions.end();
-        const bool is_dep  = dep_instructions.find(&inst) != dep_instructions.end();
-        if (!is_seed && !is_dep) {
-          continue;
-        }
-
-        const auto& loc = inst.getDebugLoc();
-        const unsigned line = loc ? loc.getLine() : 0;
-        ensure_function_bucket(&func).instructions.emplace_back(&inst, line, !is_seed && is_dep);
-      }
-    }
+    return ordered_line_map[it->second];
   }
 
-  return matches;
+  void build_ordered_line_map() {
+    for_each_relevant_instruction([&](const llvm::Function& func, const llvm::BasicBlock& block,
+                                      const llvm::Instruction& inst) {
+      const bool is_seed = seed_instructions.find(&inst) != seed_instructions.end();
+      const bool is_dep = dependency_instructions.find(&inst) != dependency_instructions.end();
+      if (!is_seed && !is_dep) {
+        return;
+      }
+
+      ensure_function_bucket(&func).instructions.emplace_back(&inst, &block, instruction_line_or_zero(inst),
+                                                              !is_seed && is_dep);
+    });
+  }
+
+  LineMap run() {
+    collect_seed_instructions();
+    collect_backward_dependencies();
+    build_ordered_line_map();
+    return std::move(ordered_line_map);
+  }
+};
+
+LineMap collect_line_map(const llvm::Module* module, unsigned line_start, unsigned search_end,
+                         const std::optional<std::string>& main_file_path, bool include_deps) {
+  return LineMapBuilder(module, main_file_path, line_start, search_end, include_deps).run();
+}
+
+void print_line_map(llvm::raw_ostream& out, const LineMap& line_map) {
+  for (const auto& [func, instructions] : line_map) {
+    out << func->getName() << ":\n";
+    const llvm::BasicBlock* current_block = nullptr;
+    for (const auto& line_instruction : instructions) {
+      if (line_instruction.block != current_block) {
+        current_block = line_instruction.block;
+        if (!current_block) {
+          continue;
+        }
+        out.indent(2);
+        if (current_block->hasName()) {
+          out << current_block->getName() << ":\n";
+        } else {
+          current_block->printAsOperand(out, false);
+          out << ":\n";
+        }
+      }
+      out.indent(2);
+      line_instruction.inst->print(out);
+      out << "\n";
+    }
+  }
 }
 }  // namespace
 
@@ -195,37 +278,12 @@ void IRNodeFinder::printFunction(const std::string& regex) const {
 void IRNodeFinder::printByLocation(unsigned line_start, unsigned line_end, bool include_deps) const {
   const unsigned search_end = std::max(line_start, line_end);
   const auto* module        = tool.getModule();
-  const auto main_file_path = [&](const llvm::Module* m) -> std::optional<std::string> {
-    auto* CUs = m->getNamedMetadata("llvm.dbg.cu");
-    if (!CUs || CUs->getNumOperands() == 0) {
-      return std::nullopt;
-    }
-    auto* cu = llvm::cast<llvm::DICompileUnit>(CUs->getOperand(0));
-    llvm::SmallString<128> path;
-    if (!llvm::sys::fs::real_path(cu->getFilename(), path)) {
-      return path.str().str();
-    }
-    return std::nullopt;
-  }(module);
+  const auto main_file_path = get_main_file_path(module);
+  const LineMap line_map    = collect_line_map(module, line_start, search_end, main_file_path, include_deps);
 
-  std::string matches_buffer;
-  llvm::raw_string_ostream buffer_stream{matches_buffer};
-
-  const auto print_line_map = [&](const LineMap& line_map) {
-    for (const auto& [func, instructions] : line_map) {
-      buffer_stream << func->getName() << ":\n";
-      for (const auto& line_instruction : instructions) {
-        line_instruction.inst->print(buffer_stream);
-        buffer_stream << "\n";
-      }
-    }
-  };
-
-  const LineMap line_map = collect_line_map(module, line_start, search_end, main_file_path, include_deps);
-  print_line_map(line_map);
-
-  if (!buffer_stream.str().empty()) {
-    os << buffer_stream.str() << "\n";
+  if (!line_map.empty()) {
+    print_line_map(os, line_map);
+    os << "\n";
   }
 }
 
