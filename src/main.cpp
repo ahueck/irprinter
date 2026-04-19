@@ -66,6 +66,7 @@ int main(int argc, const char** argv) {
   }
 
   llvm::LineEditor le("ir-printer");
+  bool include_deps = true;
   while (auto line = le.readLine()) {
     StringRef ref = *line;
     auto cmd      = lexWord(ref);
@@ -84,7 +85,20 @@ int main(int argc, const char** argv) {
       if (end < start) {
         llvm::outs() << "Error: end location (" << end << ") is less than start location (" << start << ")\n";
       } else {
-        ir.printByLocation(start, end);
+        ir.printByLocation(start, end, include_deps);
+      }
+    } else if (cmd == "dep" || cmd == "deps") {
+      auto arg = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
+      if (arg.empty()) {
+        llvm::outs() << "Dependency expansion is " << (include_deps ? "on" : "off") << "\n";
+      } else if (arg == "on") {
+        include_deps = true;
+        llvm::outs() << "Dependency expansion enabled\n";
+      } else if (arg == "off") {
+        include_deps = false;
+        llvm::outs() << "Dependency expansion disabled\n";
+      } else {
+        llvm::outs() << "Invalid dep option: " << arg << " (expected: on|off)\n";
       }
     } else if (cmd == "g" || cmd == "generate") {
       ir.parse();

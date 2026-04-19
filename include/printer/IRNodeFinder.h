@@ -39,7 +39,7 @@ class IRNodeFinder {
 
   void printFunction(const std::string& regex = ".*") const;
 
-  void printByLocation(unsigned line_start_, unsigned line_end_ = 0) const;
+  void printByLocation(unsigned line_start_, unsigned line_end_ = 0, bool include_deps = true) const;
 
   void listFunction(const std::string& regex = ".*") const;
 
