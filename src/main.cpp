@@ -66,7 +66,8 @@ int main(int argc, const char** argv) {
   }
 
   llvm::LineEditor le("ir-printer");
-  bool include_deps = true;
+  irprinter::IRPrintingFlags printing_flags;
+  llvm::outs().enable_colors(true);
   while (auto line = le.readLine()) {
     StringRef ref = *line;
     auto cmd      = lexWord(ref);
@@ -85,11 +86,17 @@ int main(int argc, const char** argv) {
       if (end < start) {
         llvm::outs() << "Error: end location (" << end << ") is less than start location (" << start << ")\n";
       } else {
-        ir.printByLocation(start, end, include_deps);
+        ir.printByLocation(start, end, printing_flags);
       }
     } else if (cmd == "deps") {
-      include_deps = !include_deps;
-      llvm::outs() << "Dependency expansion " << (include_deps ? "enabled" : "disabled") << "\n";
+      printing_flags.setIncludeDependencies(!printing_flags.include_dependencies);
+      llvm::outs() << "Dependency expansion " << (printing_flags.include_dependencies ? "enabled" : "disabled") << "\n";
+    } else if (cmd == "lines") {
+      printing_flags.setPrintLine(!printing_flags.print_line);
+      llvm::outs() << "Line prefixes " << (printing_flags.print_line ? "enabled" : "disabled") << "\n";
+    } else if (cmd == "flags") {
+      llvm::outs() << "include_dependencies=" << (printing_flags.include_dependencies ? "true" : "false")
+                   << ", print_line=" << (printing_flags.print_line ? "true" : "false") << "\n";
     } else if (cmd == "g" || cmd == "generate") {
       ir.parse();
     } else if (cmd == "f" || cmd == "flag") {
