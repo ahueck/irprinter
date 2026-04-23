@@ -116,7 +116,7 @@ const llvm::Module* LLVMTool::getModule() const {
 }
 
 void LLVMTool::setFlag(StringRef flag) {
-  user_args.emplace_back(flag.data());
+  user_args.emplace_back(flag.str());
 }
 
 void LLVMTool::removeFlag(StringRef flag) {
