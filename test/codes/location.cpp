@@ -1,10 +1,8 @@
 // RUN: echo "6 10" | %llvm-ir-printer %s -- -g | %filecheck %s
 
-// REQUIRES: llvm-21
-
 // CHECK: main:
-// CHECK: store i32 1, ptr {{.*}}
-// CHECK: store i32 2, ptr {{.*}}
+// CHECK: store i32 1, {{(ptr|i32\*)}} {{.*}}
+// CHECK: store i32 2, {{(ptr|i32\*)}} {{.*}}
 int main() {
   int a = 1;
   int b = 2;

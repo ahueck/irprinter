@@ -2,6 +2,7 @@
 
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/CompilationDatabase.h>
+#include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/StringRef.h>
 #include <llvm/IR/Module.h>
 #include <llvm/LineEditor/LineEditor.h>
@@ -18,26 +19,24 @@ static llvm::cl::OptionCategory IRPrinter("IR Printer Sample");
 // cl::cat(IRPrinter));
 
 namespace {
-StringRef lexWord(StringRef word) {
-  StringRef::iterator begin{word.begin()};
-  StringRef::iterator end{word.end()};
-  while (true) {
-    if (begin == end) {
-      return StringRef(begin, 0);
-    }
-    if (!isWhitespace(*begin)) {
+SmallVector<StringRef, 8> tokenize_words(StringRef line) {
+  SmallVector<StringRef, 8> tokens;
+  while (!line.empty()) {
+    line = line.ltrim();
+    if (line.empty()) {
       break;
     }
-    ++begin;
-  }
-  StringRef::iterator wordbegin = begin;
-  while (true) {
-    ++begin;
 
-    if (begin == end || isWhitespace(*begin)) {
-      return StringRef(wordbegin, begin - wordbegin);
+    const auto word_end = line.find_first_of(" \t\n\r\f\v");
+    if (word_end == StringRef::npos) {
+      tokens.push_back(line);
+      break;
     }
+
+    tokens.push_back(line.take_front(word_end));
+    line = line.drop_front(word_end);
   }
+  return tokens;
 }
 }  // namespace
 
@@ -66,17 +65,24 @@ int main(int argc, const char** argv) {
   }
 
   llvm::LineEditor le("ir-printer");
+  irprinter::IRPrintingFlags printing_flags;
+  llvm::outs().enable_colors(true);
   while (auto line = le.readLine()) {
-    StringRef ref = *line;
-    auto cmd      = lexWord(ref);
+    const auto tokens = tokenize_words(*line);
+    if (tokens.empty()) {
+      continue;
+    }
+
+    const auto cmd  = tokens.front();
+    const auto args = ArrayRef<StringRef>(tokens).drop_front();
 
     if (cmd == "q" || cmd == "quit") {
       break;
     } else if (unsigned start; !cmd.getAsInteger(10, start)) {
-      auto end_ref = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
       unsigned end{start};
-      if (!end_ref.empty()) {
-        if (end_ref.getAsInteger(10, end)) {
+      if (!args.empty()) {
+        if (args.front().getAsInteger(10, end)) {
+          const auto end_ref = args.front();
           llvm::outs() << "Invalid end location: " << end_ref << "\n";
           continue;
         }
@@ -84,22 +90,39 @@ int main(int argc, const char** argv) {
       if (end < start) {
         llvm::outs() << "Error: end location (" << end << ") is less than start location (" << start << ")\n";
       } else {
-        ir.printByLocation(start, end);
+        ir.printByLocation(start, end, printing_flags);
       }
+    } else if (cmd == "deps") {
+      printing_flags.setIncludeDependencies(!printing_flags.include_dependencies);
+      llvm::outs() << "Dependency expansion " << (printing_flags.include_dependencies ? "enabled" : "disabled") << "\n";
+    } else if (cmd == "lines") {
+      printing_flags.setPrintLine(!printing_flags.print_line);
+      llvm::outs() << "Line prefixes " << (printing_flags.print_line ? "enabled" : "disabled") << "\n";
     } else if (cmd == "g" || cmd == "generate") {
       ir.parse();
     } else if (cmd == "f" || cmd == "flag") {
-      auto str = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
-      llvm::outs() << "Set flag to " << str << ". Re-generating module...\n";
-      ir.setOptFlag(str);
+      std::string joined_flags;
+      for (const auto flag : args) {
+        if (!joined_flags.empty()) {
+          joined_flags += " ";
+        }
+        joined_flags += flag.str();
+        ir.setOptFlag(flag);
+      }
+
+      if (args.empty()) {
+        llvm::outs() << "No flag provided. Usage: f <flag...>\n";
+        continue;
+      }
+
+      llvm::outs() << "Set flag" << (args.size() > 1 ? "s" : "") << " to " << joined_flags
+                   << ". Re-generating module...\n";
       ir.parse();
     } else if (cmd == "dump") {
       ir.dump();
     } else if (cmd == "l" || cmd == "list" || cmd == "p" || cmd == "print") {
-      auto str = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
-      if (str == "") {
-        str = ".*";
-      } else {
+      StringRef str = args.empty() ? StringRef(".*") : args.front();
+      if (!args.empty()) {
         std::string error;
         llvm::Regex r(str);
         if (!r.isValid(error)) {
@@ -113,7 +136,7 @@ int main(int argc, const char** argv) {
         ir.listFunction(std::string{str});
       }
     } else if (cmd == "d" || cmd == "demangle") {
-      auto str            = lexWord(StringRef(cmd.end(), ref.end() - cmd.end()));
+      auto str            = args.empty() ? StringRef{} : args.front();
       auto demangled_name = irprinter::IRNodeFinder::demangle(std::string{str});
       llvm::outs() << "Demangled name: " << demangled_name << "\n";
     }

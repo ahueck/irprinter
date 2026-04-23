@@ -21,6 +21,21 @@ class CommonOptionsParser;
 
 namespace irprinter {
 
+struct IRPrintingFlags {
+  bool include_dependencies{true};
+  bool print_line{true};
+
+  IRPrintingFlags& setIncludeDependencies(bool enable) {
+    include_dependencies = enable;
+    return *this;
+  }
+
+  IRPrintingFlags& setPrintLine(bool enable) {
+    print_line = enable;
+    return *this;
+  }
+};
+
 class IRNodeFinder {
  private:
   LLVMTool tool;
@@ -39,7 +54,8 @@ class IRNodeFinder {
 
   void printFunction(const std::string& regex = ".*") const;
 
-  void printByLocation(unsigned line_start_, unsigned line_end_ = 0) const;
+  void printByLocation(unsigned line_start_, unsigned line_end_ = 0,
+                       const IRPrintingFlags& flags = IRPrintingFlags{}) const;
 
   void listFunction(const std::string& regex = ".*") const;
 
