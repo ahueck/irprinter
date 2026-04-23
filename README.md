@@ -11,15 +11,19 @@ It allows you to print IR for specific functions, which is especially useful whe
   2. Full function bodies.
 * Dump the entire IR of a translation unit.
 * Print statements within a specific line number range (based on debug information).
+  * Printing backward dependencies for location queries is toggleable via `deps`.
+  * Line-number prefixes are toggleable via `lines`.
+    * Prefixes use `+` for dependency-discovered instructions.
+    * A prefix like `+0 | ...` means the instruction has no debug line metadata in IR.
 
 ## Usage
 Refer to [main.cpp](src/main.cpp) for a full list of command-line arguments.
 
 ### Example
-Assume `test.c` contains the following code:
+Assume [test.c](test/codes/test.c) contains the following code:
 
 ```c
-int foo () {
+int foo() {
     return 2; 
 }
 int main() {
@@ -38,35 +42,39 @@ In this example, we:
 5. Optimize the code with `-O3`.
 6. Print the body of `main` again to see the result of the optimization.
 
+The regression test input for this flow lives at `test/codes/test.c`.
+
 ```console
-$~/irprint/install$ ./bin/irprinter ../test.c -- -g
+$ ./bin/irprinter test/codes/test.c -- -g
 ir-printer> l
 Match 1 [foo()]:
-; Function Attrs: mustprogress noinline nounwind optnone uwtable
-define dso_local noundef i32 @_Z3foov() #0 !dbg !10 
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @foo() #0 !dbg !10 
 
 Match 2 [main]:
-; Function Attrs: mustprogress noinline norecurse nounwind optnone uwtable
-define dso_local noundef i32 @main() #1 !dbg !10 
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @main() #0 !dbg !10 
 
 ir-printer> p main
-Match 1 [main]:; Function Attrs: mustprogress noinline norecurse nounwind optnone uwtable
-define dso_local noundef i32 @main() #1 !dbg !10 {
+Match 1 [main]:; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @main() #0 !dbg !10 {
 entry:
   %retval = alloca i32, align 4
   %val = alloca i32, align 4
   store i32 0, ptr %retval, align 4
     #dbg_declare(ptr %val, !16, !DIExpression(), !17)
-  %call = call noundef i32 @_Z3foov(), !dbg !18
+  %call = call i32 @foo(), !dbg !18
   store i32 %call, ptr %val, align 4, !dbg !19
   ret i32 0, !dbg !20
 }
 
 ir-printer> 6 7
 main:
-  %call = call noundef i32 @_Z3foov(), !dbg !18
-  store i32 %call, ptr %val, align 4, !dbg !19
-  ret i32 0, !dbg !20
+  entry:
+  +0 |   %val = alloca i32, align 4
+   6 |   %call = call i32 @foo(), !dbg !18
+   6 |   store i32 %call, ptr %val, align 4, !dbg !19
+   7 |   ret i32 0, !dbg !20
 
 ir-printer> f -O3
 Set flag to -O3. Re-generating module...
@@ -78,11 +86,13 @@ entry:
 }
 ```
 
+Note: this output was captured with LLVM 20.1.8. Exact IR attributes and mangling can vary between LLVM versions.
+
 ## How to Build
 
 ### Requirements
 - CMake >= 3.20
-- Clang/LLVM 12, 14, or 18-21 (CMake must be able to find the installation; see the [LLVM CMake documentation](https://llvm.org/docs/CMake.html) or the [CI workflow](.github/workflows/basic-ci.yml))
+- Clang/LLVM 12, 14, or 18-22 (CMake must be able to find the installation; see the [LLVM CMake documentation](https://llvm.org/docs/CMake.html) or the [CI workflow](.github/workflows/basic-ci.yml))
 - A C++17 compatible compiler
 
 ### Build Steps

@@ -19,7 +19,13 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
-find_package(Clang REQUIRED HINTS "${Clang_DIR}")
+find_package(Clang QUIET HINTS "${Clang_DIR}")
+
+if(NOT Clang_FOUND)
+  # Optional: only needed for CIR-enabled Clang packages:
+  find_package(MLIR CONFIG QUIET HINTS "${MLIR_DIR}")
+  find_package(Clang REQUIRED HINTS "${Clang_DIR}")
+endif()
 
 include(AddLLVM)
 include(clang-tidy)
