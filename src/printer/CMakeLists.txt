@@ -3,16 +3,21 @@ add_library(llvm-ir-print STATIC
   LLVMTool.cpp
   )
 
-target_define_file_basename(llvm-ir-print)
-target_project_compile_options(llvm-ir-print)
-target_project_compile_definitions(llvm-ir-print
+irprinter_target_define_file_basename(llvm-ir-print)
+irprinter_target_project_compile_options(llvm-ir-print)
+irprinter_target_project_compile_definitions(llvm-ir-print
   PRIVATE_DEFS
-    LOG_LEVEL=${LOG_LEVEL}
+    LOG_LEVEL=${IRPRINTER_LOG_LEVEL}
 )
+
+if(IRPRINTER_CLANG_RESOURCE_DIR)
+  target_compile_definitions(llvm-ir-print PRIVATE IRPRINTER_CLANG_RESOURCE_DIR="${IRPRINTER_CLANG_RESOURCE_DIR}")
+endif()
 
 target_include_directories(llvm-ir-print
   PUBLIC
-  ${PROJECT_SOURCE_DIR}/include
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 target_include_directories(llvm-ir-print 
@@ -30,13 +35,10 @@ install(
   TARGETS llvm-ir-print
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
-  PUBLIC_HEADER DESTINATION include
 )
 
 install(
-  FILES 
-    ${PROJECT_SOURCE_DIR}/include/printer/IRNodeFinder.h
-    ${PROJECT_SOURCE_DIR}/include/printer/LLVMTool.h
+  DIRECTORY ${PROJECT_SOURCE_DIR}/include/
   DESTINATION include
 )
 

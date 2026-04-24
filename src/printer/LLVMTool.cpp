@@ -6,9 +6,11 @@
  */
 
 #include "printer/LLVMTool.h"
+#include "Util.h"
 
 #include <clang/Tooling/CommonOptionsParser.h>
 #include <clang/Tooling/CompilationDatabase.h>
+#include <llvm/Support/CommandLine.h>
 
 #include <clang/CodeGen/BackendUtil.h>
 #include <clang/CodeGen/CodeGenAction.h>
@@ -29,7 +31,7 @@ ArgumentsAdjuster getStripOptFlagAdjuster() {
     CommandLineArguments AdjustedArgs;
     for (size_t i = 0, e = Args.size(); i < e; ++i) {
       StringRef Arg = Args[i];
-      if (!Arg.startswith("-O") && !Arg.startswith("-g")) {
+      if (!util::starts_with_any_of(Arg, "-O", "-g")) {
         AdjustedArgs.push_back(Args[i]);
       }
     }
@@ -49,7 +51,9 @@ class ExtractorAction : public CodeGenAction {
   bool BeginSourceFileAction(CompilerInstance& CI) {
     // FIXME workaround for error: "clang: Not enough positional command line arguments specified!"
     // when using clangtool, the commandline parser is executed twice, this removes a leftover causing the above error
+#if LLVM_VERSION_MAJOR < 19
     llvm::cl::TopLevelSubCommand->PositionalOpts.clear();
+#endif
     return CodeGenAction::BeginSourceFileAction(CI);
   }
 
@@ -82,7 +86,19 @@ std::unique_ptr<tooling::FrontendActionFactory> CreateExtractorActionFactory(LLV
 
 }  // namespace action
 
-LLVMTool::LLVMTool(CommonOptionsParser& op) : tool(op.getCompilations(), op.getSourcePathList()) {
+LLVMTool::LLVMTool(CommonOptionsParser& op) : LLVMTool(op.getCompilations(), op.getSourcePathList()) {
+}
+
+LLVMTool::LLVMTool(const CompilationDatabase& compilation_database, ArrayRef<std::string> source_path)
+    : tool(compilation_database, source_path) {
+#ifdef IRPRINTER_CLANG_RESOURCE_DIR
+  const std::string resource_dir = IRPRINTER_CLANG_RESOURCE_DIR;
+  if (!resource_dir.empty()) {
+    const std::string resource_arg = "-resource-dir=" + resource_dir;
+    tool.appendArgumentsAdjuster(
+        clang::tooling::getInsertArgumentAdjuster(resource_arg.c_str(), clang::tooling::ArgumentInsertPosition::BEGIN));
+  }
+#endif
 }
 
 int LLVMTool::execute() {
@@ -100,7 +116,7 @@ const llvm::Module* LLVMTool::getModule() const {
 }
 
 void LLVMTool::setFlag(StringRef flag) {
-  user_args.emplace_back(flag.data());
+  user_args.emplace_back(flag.str());
 }
 
 void LLVMTool::removeFlag(StringRef flag) {
@@ -118,7 +134,7 @@ void LLVMTool::clearUserFlags() {
 void LLVMTool::commitUserArgs() {
   for (auto& arg : user_args) {
     StringRef flag = arg;
-    if (flag.startswith("-O") || flag.startswith("-g")) {
+    if (util::starts_with_any_of(flag, "-O", "-g")) {
       tool.appendArgumentsAdjuster(combineAdjusters(
           adjuster::getStripOptFlagAdjuster(), getInsertArgumentAdjuster(flag.data(), ArgumentInsertPosition::END)));
     } else {

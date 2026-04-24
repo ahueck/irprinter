@@ -19,7 +19,13 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
-find_package(Clang REQUIRED HINTS "${Clang_DIR}")
+find_package(Clang QUIET HINTS "${Clang_DIR}")
+
+if(NOT Clang_FOUND)
+  # Optional: only needed for CIR-enabled Clang packages:
+  find_package(MLIR CONFIG QUIET HINTS "${MLIR_DIR}")
+  find_package(Clang REQUIRED HINTS "${Clang_DIR}")
+endif()
 
 include(AddLLVM)
 include(clang-tidy)
@@ -27,7 +33,22 @@ include(clang-format)
 include(log-util)
 include(target-util)
 
-set(LOG_LEVEL 0 CACHE STRING "Granularity of the logger. 3 is most verbose, 0 is least.")
+set(IRPRINTER_LOG_LEVEL 0 CACHE STRING "Granularity of the logger. 3 is most verbose, 0 is least.")
+
+option(IRPRINTER_AUTO_RESOURCE_DIR "Try to automatically set the Clang resource directory" OFF)
+option(IRPRINTER_ENABLE_COVERAGE "Enable LLVM-based coverage" OFF)
+
+if(IRPRINTER_AUTO_RESOURCE_DIR AND NOT IRPRINTER_CLANG_RESOURCE_DIR)
+  find_program(CLANG_EXECUTABLE NAMES clang-${LLVM_VERSION_MAJOR} clang)
+  if(CLANG_EXECUTABLE)
+    execute_process(
+      COMMAND ${CLANG_EXECUTABLE} -print-resource-dir
+      OUTPUT_VARIABLE CLANG_RESOURCE_DIR_VAR
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(IRPRINTER_CLANG_RESOURCE_DIR ${CLANG_RESOURCE_DIR_VAR} CACHE STRING "Clang resource directory")
+  endif()
+endif()
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
